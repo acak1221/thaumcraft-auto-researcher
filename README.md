@@ -86,7 +86,7 @@ https://github.com/user-attachments/assets/a2eaa3b7-c7fe-4fbc-9905-1b19a32d498f
 4. Выберите версию вашего Thaumcraft и все установленные аддоны
 ![image](https://github.com/SergTyapkin/thaumcraft-auto-researcher/blob/master/README_images/setup_version_and_addons.png?raw=true) 
 
-После выполнения всех этих действий, все выборы пользователя сохраняюся в папке `C://users/%USER%/.ThaumcraftAutoResearcher`,
+После выполнения всех этих действий, все выборы пользователя сохраняются в папке `C://users/%USER%/.ThaumcraftAutoResearcher`,
 при следующем запуске программы это делать не обязательно, будет показан сразу следующий шаг.
 Вернуться к конфигурации всегда можно, нажав клавишу `Backspace`
 
