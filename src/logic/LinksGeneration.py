@@ -87,7 +87,7 @@ class AspectGraph:
 
 class Aspect:
     name: str
-    coord: (int, int)
+    coord: tuple[int, int]
     linked_to_initials: set
 
     def __init__(self, name, coord, linked_to_initials):
@@ -102,7 +102,7 @@ class Aspect:
         self,
         target_aspect,
         hexagon_field_radius: int,
-        holesSet: set[(int, int)],
+        holesSet: set[tuple[int, int]],
         initial_aspects: set,
         min_length: int = 0,
     ) -> tuple[int, set[tuple[int, int]]]:
@@ -110,9 +110,9 @@ class Aspect:
         # Для каждой клетки храним минимальное расстояние до неё. Или None, если клетка ещё не посещена
 
         class PathElement:
-            path: list[(int, int)]
+            path: list[tuple[int, int]]
             dist: int = DEFAULT_INITIAL_PATH_LEN
-            coord: (int, int)
+            coord: tuple[int, int]
 
             def __init__(self, x: int, y: int):
                 self.coord = (x, y)
@@ -124,7 +124,7 @@ class Aspect:
             def __lt__(self, other):
                 return self.dist < other.dist
 
-        cells: dict[(int, int), PathElement] = {}
+        cells: dict[tuple[int, int], PathElement] = {}
         unvisited_nodes: set[PathElement] = set()
         # Создаем все клетки
         for x in range(-hexagon_field_radius, hexagon_field_radius + 1):
@@ -183,11 +183,11 @@ class Aspect:
 
 
 def generateLinkMap(
-    existing_aspects: dict[(int, int), str],
-    holes_set: set[(int, int)],
+    existing_aspects: dict[tuple[int, int], str],
+    holes_set: set[tuple[int, int]],
     available_aspects: set[str],
     interruptingFlag: list[bool],
-) -> dict[(int, int):str]:
+) -> dict[tuple[int, int], str]:
     logging.debug("-----------")
     logging.info("START SOLVING")
     logging.debug("#---0. Setting up:")
