@@ -13,8 +13,8 @@ from PyQt5.QtWidgets import QApplication, QDesktopWidget, QMainWindow
 
 from src.UI.primitives import Point, Text, UIPrimitive
 from src.utils.LinkableValue import editLinkableValue
+from src.utils.constants import FPS
 
-FPS = 60
 FRAME_TIME = int(1000 / FPS)
 
 
