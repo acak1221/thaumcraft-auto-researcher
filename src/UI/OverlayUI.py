@@ -116,6 +116,8 @@ class _Window(QMainWindow):
     otherProcessThread: QThread = None
     app: QApplication = None
     holdingKeys: set[int] = set()
+    _keyboard_press_handle = None
+    _keyboard_release_handle = None
 
     def __init__(self, opacity=1.0, w=None, h=None):
         QMainWindow.__init__(
@@ -148,8 +150,8 @@ class _Window(QMainWindow):
             pressedKeyCode = event.scan_code
             self.holdingKeys.discard(pressedKeyCode)
 
-        keyboard.on_press(onKeyboardPress)
-        keyboard.on_release(onKeyboardRelease)
+        self._keyboard_press_handle = keyboard.on_press(onKeyboardPress)
+        self._keyboard_release_handle = keyboard.on_release(onKeyboardRelease)
 
         self.startTimer(FRAME_TIME)
 
@@ -327,6 +329,13 @@ class _Window(QMainWindow):
     def exit(self):
         logging.info("##############")
         logging.info("Shutdown all...")
+        try:
+            if self._keyboard_press_handle is not None:
+                keyboard.unhook(self._keyboard_press_handle)
+            if self._keyboard_release_handle is not None:
+                keyboard.unhook(self._keyboard_release_handle)
+        except Exception as e:
+            logging.error(f"Error unhooking keyboard: {e}")
         self.otherProcessThread.exit()
         self.app.quit()
         # self.destroy()
