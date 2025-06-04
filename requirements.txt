@@ -1,0 +1,8 @@
+PyQt5
+Pillow
+numpy
+onnxruntime
+keyboard
+mouse
+pyscreeze
+appdata
