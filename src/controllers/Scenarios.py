@@ -924,7 +924,7 @@ def runResearching(UI: OverlayUI, TI: ThaumInteractor):
 
     cells: list[Cell] = []
     selectedCell: list[Cell | None, QColor | None] = [None, None]  # list to make it mutable
-    currentLinkMap: list[dict[(int, int), str]] = [{}]  # list to make it mutable
+    currentLinkMap: list[dict[tuple[int, int], str]] = [{}]  # list to make it mutable
 
     cellColorFree = QColor("white")
     cellColorNone = QColor("black")

@@ -350,7 +350,7 @@ class ThaumInteractor:
 
         removeAspectDuplicates()
 
-    def scrollToAspect(self, aspect: Aspect) -> (int, int):
+    def scrollToAspect(self, aspect: Aspect) -> tuple[int, int]:
         logging.info(f"Scroll to aspect {aspect}, in cell[absolute] ({aspect.cellX}, {aspect.cellY})")
 
         cellPageIdxMin = max(aspect.cellX - THAUM_ASPECTS_INVENTORY_SLOTS_X + 1, 0)
@@ -435,7 +435,7 @@ class ThaumInteractor:
         aspect1.count -= mixingTimes
         aspect2.count -= mixingTimes
 
-    def fillByLinkMap(self, aspectsMap: dict[(int, int), str]):
+    def fillByLinkMap(self, aspectsMap: dict[tuple[int, int], str]):
         logging.info(f"Filling aspects by link map: {aspectsMap}")
 
         # Оптимизируем порядок аспектов, чтобы пришлось меньше листать инвентарь
@@ -626,7 +626,7 @@ class ThaumInteractor:
                 return i
         return None
 
-    def getExistingAspectsOnField(self) -> tuple[dict[(int, int), str], set[(int, int)], set[(int, int)]]:
+    def getExistingAspectsOnField(self) -> tuple[dict[tuple[int, int], str], set[tuple[int, int]], set[tuple[int, int]]]:
         hexagonsRectLT = P(
             self.rectHexagonsCC.x - (THAUM_HEXAGONS_SLOTS_COUNT / 2 + 0.5) * self.hexagonSlotSizeX,
             self.rectHexagonsCC.y - (THAUM_HEXAGONS_SLOTS_COUNT / 2 + 0.1) * self.hexagonSlotSizeY,
