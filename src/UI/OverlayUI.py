@@ -3,7 +3,7 @@ import sys
 import traceback
 from enum import Enum
 from typing import Callable, Any
-from venv import logger
+logger = logging.getLogger(__name__)
 
 import keyboard
 from PyQt5 import QtGui
