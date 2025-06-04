@@ -26,6 +26,21 @@ class LinkableValue:
             return self.val * other.val
         return self.val * other
 
+    def __radd__(self, other):
+        if isinstance(other, LinkableValue):
+            return other.val + self.val
+        return other + self.val
+
+    def __rsub__(self, other):
+        if isinstance(other, LinkableValue):
+            return other.val - self.val
+        return other - self.val
+
+    def __rmul__(self, other):
+        if isinstance(other, LinkableValue):
+            return other.val * self.val
+        return other * self.val
+
     def __truediv__(self, other):
         if isinstance(other, LinkableValue):
             return self.val / other.val
