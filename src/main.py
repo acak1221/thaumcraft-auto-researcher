@@ -1,6 +1,5 @@
 import logging
 import sys
-from logging.handlers import RotatingFileHandler
 
 from src.controllers import Scenarios
 from src.UI.OverlayUI import OverlayUI

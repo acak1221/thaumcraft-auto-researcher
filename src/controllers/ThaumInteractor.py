@@ -1,7 +1,6 @@
 import logging
 import math
 import time
-from threading import Thread
 from typing import Callable
 
 import pyscreeze  # for screenshot
@@ -111,7 +110,7 @@ class ThaumInteractor:
         self.allAspects = [Aspect(orderedAvailableAspects[i], i) for i in range(len(orderedAvailableAspects))]
         self.loadAspectsImages()
 
-        logging.info(f"ThaumcraftInteractor successfully initialized")
+        logging.info("ThaumcraftInteractor successfully initialized")
         logging.info(f"All known aspects:     {self.allAspects}")
         logging.info(f"All available aspects: {self.availableAspects}")
 
@@ -128,7 +127,7 @@ class ThaumInteractor:
         return result
 
     def loadAspectsImages(self):
-        logging.info(f"Loading thaum aspects images...")
+        logging.info("Loading thaum aspects images...")
         for aspect in self.allAspects:
             if aspect.image:
                 continue
@@ -150,7 +149,7 @@ class ThaumInteractor:
     def scrollLeft(self):
         if self.currentAspectsPageIdx <= 0:
             return
-        logging.info(f"Thaum inventory scrolling left")
+        logging.info("Thaum inventory scrolling left")
         self.pointAspectsScrollLeft.click()
         self._showDebugClick(self.pointAspectsScrollLeft)
         self.currentAspectsPageIdx -= 1
@@ -158,13 +157,13 @@ class ThaumInteractor:
     def scrollRight(self):
         if self.currentAspectsPageIdx >= self.maxAspectsPagesCount - 1:
             return
-        logging.info(f"Thaum inventory scrolling right")
+        logging.info("Thaum inventory scrolling right")
         self.pointAspectsScrollRight.click()
         self._showDebugClick(self.pointAspectsScrollRight)
         self.currentAspectsPageIdx += 1
 
     def scrollToLeftSide(self):
-        logging.info(f"Thaum inventory scrolling to left side border...")
+        logging.info("Thaum inventory scrolling to left side border...")
         if self.currentAspectsPageIdx is None:
             if self.maxAspectsPagesCount is not None:
                 self.currentAspectsPageIdx = self.maxAspectsPagesCount
@@ -176,7 +175,7 @@ class ThaumInteractor:
         self.currentAspectsPageIdx = 0
 
     def scrollToRightSide(self):
-        logging.info(f"Thaum inventory scrolling to right side border...")
+        logging.info("Thaum inventory scrolling to right side border...")
         if self.currentAspectsPageIdx is None:
             self.currentAspectsPageIdx = 0
         for _ in range(self.maxAspectsPagesCount - self.currentAspectsPageIdx):
@@ -202,7 +201,7 @@ class ThaumInteractor:
         self.pointSafePosition.move()
 
     def takeOutPaper(self):
-        logging.info(f"Take out paper from thaum inventory")
+        logging.info("Take out paper from thaum inventory")
         self.pointPapers.click()
         self._showDebugClick(self.pointPapers)
         eventsDelay()
@@ -210,7 +209,7 @@ class ThaumInteractor:
         self._showDebugClick(self.pointWorkingInventorySlot)
 
     def insertPaper(self):
-        logging.info(f"Insert paper into thaum inventory")
+        logging.info("Insert paper into thaum inventory")
         self.pointWorkingInventorySlot.click()
         self._showDebugClick(self.pointWorkingInventorySlot)
         eventsDelay()
@@ -297,7 +296,7 @@ class ThaumInteractor:
 
         if prevAspect is not None:
             if prevAspect == aspect:
-                logging.info(f"Aspects is equal. Nothing to change")
+                logging.info("Aspects is equal. Nothing to change")
                 return
             aspectIdx = self.getAvailableAspectIdx(prevAspect)
             prevAspect.count = None
@@ -479,7 +478,7 @@ class ThaumInteractor:
 
                 # Sort found aspects
                 self.availableAspects.sort(key=lambda a: a.uid)
-                logging.info(f"All detected available aspects was sorted")
+                logging.info("All detected available aspects was sorted")
                 self.logAvailableAspects()
 
                 onFinishCallback(*callbackArgs)
@@ -537,7 +536,7 @@ class ThaumInteractor:
 
                 # Try to scroll right on maximum of
                 # Check if we really move right or it's end of inventory
-                logging.info(f"Checking if we really can move right or it's end of inventory...")
+                logging.info("Checking if we really can move right or it's end of inventory...")
                 newAdditionalOffset = 0
                 previousScreenshotImage = self.takeScreenshot(
                     self.rectAspectsListingRB.x - slotWidth, self.rectAspectsListingLT.y,
@@ -557,7 +556,7 @@ class ThaumInteractor:
                     screenshotsDiff = getImagesDiffPercent(previousScreenshotImage, newScreenshotImage)
                     logging.debug(f"Difference of two images before and after scrolling right: {screenshotsDiff}")
                     if screenshotsDiff < IMAGES_TOLERANCE_PERCENT:  # nothing changed - it's the end of inventory
-                        logging.info(f"Found end of inventory. Detection ends")
+                        logging.info("Found end of inventory. Detection ends")
                         self.maxAspectsPagesCount = self.currentAspectsPageIdx
                         isFoundEndOfInventory = True
                         self.currentAspectsPageIdx -= 1
@@ -681,7 +680,7 @@ class ThaumInteractor:
         logging.debug(f"Found aspects: {existingAspects}")
         logging.debug(f"Found holes: {noneHexagons}")
         logging.debug(f"Free hexagons: {freeHexagons}")
-        logging.debug(f"End of detecting hexagons field")
+        logging.debug("End of detecting hexagons field")
 
         self.UI.removeObject(debugHighlightingRect)
         return existingAspects, noneHexagons, freeHexagons

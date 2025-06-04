@@ -6,6 +6,5 @@ from src.UI.primitives.Line import Line
 from src.UI.primitives.Point import Point
 from src.UI.primitives.Rect import Rect
 from src.UI.primitives.Text import Text
-from src.UI.primitives.Image import Image
 
 UIPrimitive = Union[Point, Line, Circle, Rect, Text, Image]

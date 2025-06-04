@@ -63,7 +63,7 @@ def saveThaumControlsConfig(pointWritingMaterials, pointPapers, rectAspectsListi
         "rectHexagonsCC": {"x": rectHexagonsCC.x, "y": rectHexagonsCC.y},
         "hexagonSlotSizeY": hexagonSlotSizeY,
     })
-    logging.info(f"Thaum controls config successfully saved")
+    logging.info("Thaum controls config successfully saved")
 
 
 def readJSONConfig(fullpath: str):
