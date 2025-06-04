@@ -327,7 +327,7 @@ class _Worker(QObject):
     def work(self, app_to_shutdown):
         try:
             self.foo()
-        except Exception as e:
+        except Exception:
             logging.critical(f"Critical error in main cycle:\n{traceback.format_exc()}")
             app_to_shutdown.quit()
 

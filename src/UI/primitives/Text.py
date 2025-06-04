@@ -1,4 +1,3 @@
-from enum import Enum
 from typing import Callable
 
 from PyQt5.QtCore import Qt
