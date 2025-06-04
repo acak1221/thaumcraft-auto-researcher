@@ -26,10 +26,15 @@ class LinkableValue:
             return self.val * other.val
         return self.val * other
 
-    def __divmod__(self, other):
+    def __truediv__(self, other):
         if isinstance(other, LinkableValue):
             return self.val / other.val
         return self.val / other
+
+    def __rtruediv__(self, other):
+        if isinstance(other, LinkableValue):
+            return other.val / self.val
+        return other / self.val
 
     def __lt__(self, other):
         if isinstance(other, LinkableValue):
