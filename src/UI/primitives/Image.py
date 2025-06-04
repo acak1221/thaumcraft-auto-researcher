@@ -8,19 +8,20 @@ from src.UI.primitives.Rect import Rect
 
 class Image(_Object):
     def __init__(
-            self,
-            x: float,
-            y: float,
-            w: float,
-            h: float,
-            path: str | None,
-            movable: bool = False,
-            hoverable: bool = False,
-            hoverColor: QColor = None,
-            onMoveCallback: Callable = None,
-            onClickCallback: Callable = None,
-            onClickCallbackArgs: list = [],
-            clickable: bool = None):
+        self,
+        x: float,
+        y: float,
+        w: float,
+        h: float,
+        path: str | None,
+        movable: bool = False,
+        hoverable: bool = False,
+        hoverColor: QColor = None,
+        onMoveCallback: Callable = None,
+        onClickCallback: Callable = None,
+        onClickCallbackArgs: list = [],
+        clickable: bool = None,
+    ):
         self.rect = Rect(x - w / 2, y - h / 2, x + w / 2, y + h / 2)
         self.w = w
         self.h = h
@@ -63,8 +64,10 @@ class Image(_Object):
         self.rect.setRy(self.rect.LT.y + self.h)
 
     def render(self, painter: QPainter):
-        if not super().render(painter): return
-        if not self.image: return
+        if not super().render(painter):
+            return
+        if not self.image:
+            return
         painter.drawPixmap(int(self.rect.LT.x), int(self.rect.LB.y), int(self.rect.w), int(self.rect.h), self.image)
 
     def isHover(self, x: float, y: float):

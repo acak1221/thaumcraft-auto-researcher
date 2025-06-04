@@ -75,8 +75,14 @@ class TimedEvent:
     kwargs: dict[any]
     onChangeCallback: Callable[[int], None]
 
-    def __init__(self, timeLeftMs: int, callback: Callable[[], None], args=[], kwargs={},
-                 onChangeCallback: Callable[[int], None] = lambda timeLeft: None):
+    def __init__(
+        self,
+        timeLeftMs: int,
+        callback: Callable[[], None],
+        args=[],
+        kwargs={},
+        onChangeCallback: Callable[[int], None] = lambda timeLeft: None,
+    ):
         self.callback = callback
         self.timeLeftMs = timeLeftMs
         self.args = args
@@ -113,8 +119,9 @@ class _Window(QMainWindow):
 
     def __init__(self, opacity=1.0, w=None, h=None):
         QMainWindow.__init__(
-            self, None,
-            Qt.FramelessWindowHint | Qt.MSWindowsFixedSizeDialogHint | Qt.WindowStaysOnTopHint
+            self,
+            None,
+            Qt.FramelessWindowHint | Qt.MSWindowsFixedSizeDialogHint | Qt.WindowStaysOnTopHint,
             # | Qt.Popup | Qt.WindowDoesNotAcceptFocus | Qt.WindowTransparentForInput
         )
         fillScreenGeometry = QDesktopWidget().availableGeometry()
@@ -199,12 +206,16 @@ class _Window(QMainWindow):
                 self.currentMovingObject.x = editLinkableValue(self.currentMovingObject.x, event.x())
                 self.currentMovingObject.y = editLinkableValue(self.currentMovingObject.y, event.y())
             else:
-                self.currentMovingObject.x = editLinkableValue(self.currentMovingObject.x, self.currentMovingObject.x + (event.x() - self.lastMouseMovePoint[0]))
-                self.currentMovingObject.y = editLinkableValue(self.currentMovingObject.y, self.currentMovingObject.y + (event.y() - self.lastMouseMovePoint[1]))
+                self.currentMovingObject.x = editLinkableValue(
+                    self.currentMovingObject.x, self.currentMovingObject.x + (event.x() - self.lastMouseMovePoint[0])
+                )
+                self.currentMovingObject.y = editLinkableValue(
+                    self.currentMovingObject.y, self.currentMovingObject.y + (event.y() - self.lastMouseMovePoint[1])
+                )
 
             self.lastMouseMovePoint = (event.x(), event.y())
 
-            onMoveCallback = getattr(self.currentMovingObject, 'onMoveCallback')
+            onMoveCallback = getattr(self.currentMovingObject, "onMoveCallback")
             if onMoveCallback is not None:
                 onMoveCallback()
 
@@ -215,15 +226,16 @@ class _Window(QMainWindow):
 
     def mouseReleaseEvent(self, event: QtGui.QMouseEvent) -> None:
         if self.currentPressedObject is not None and (
-                (self.anchorMouseMovePoint[0] == event.x()) and (self.anchorMouseMovePoint[1] == event.y())
-                or (not self.currentPressedObject.movable)
+            (self.anchorMouseMovePoint[0] == event.x())
+            and (self.anchorMouseMovePoint[1] == event.y())
+            or (not self.currentPressedObject.movable)
         ):
             objToClick = None
             for obj in self.objects:
                 if (
-                    (obj.isHover(event.x(), event.y())) and
-                    (getattr(obj, 'onClickCallback') is not None) and
-                    obj.clickable
+                    (obj.isHover(event.x(), event.y()))
+                    and (getattr(obj, "onClickCallback") is not None)
+                    and obj.clickable
                 ):
                     # and (self.currentPressedObject is obj):
                     objToClick = obj
@@ -239,8 +251,9 @@ class _Window(QMainWindow):
 
         self._updateObjectsHoverState(event, True)
 
-    def setTimeout(self, timeoutMs: int, callback: Callable, args=[], kwargs={},
-                   onChangeCallback=lambda timeLeft: None):
+    def setTimeout(
+        self, timeoutMs: int, callback: Callable, args=[], kwargs={}, onChangeCallback=lambda timeLeft: None
+    ):
         self.timedEvents.add(TimedEvent(timeoutMs, callback, args, kwargs, onChangeCallback))
         # or simpler but not works: QtCore.QTimer.singleShot(timeoutMs, callback)
 
@@ -354,7 +367,7 @@ class OverlayUI(_Window):
         sys.exit(exit_code)
 
     def createExitButton(self, size: int = 50, x: int = None, y: int = None) -> UIPrimitive:
-        font = QFont('Arial', int(size / 3), weight=QFont.Bold, italic=False)
+        font = QFont("Arial", int(size / 3), weight=QFont.Bold, italic=False)
         padding = (0, int(size / 15), int(size / 4), int(size / 3))
         if x is None:
             x = self.w - padding[1] - padding[3] - font.pointSize() / 1.05 * 2
@@ -362,12 +375,13 @@ class OverlayUI(_Window):
             y = 0
 
         button_object = Text(
-            x, y,
+            x,
+            y,
             font=font,
             text="x ",
-            color=QColor('white'),
+            color=QColor("white"),
             withBackground=True,
-            backgroundColor=QColor('red'),
+            backgroundColor=QColor("red"),
             padding=padding,
             hoverable=True,
             onClickCallback=self.exit,

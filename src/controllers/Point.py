@@ -27,12 +27,12 @@ class P:
             logging.debug(f"Click mouse on point {self}")
             mouse.click(button)
             return
-        keyboard.press('shift')
+        keyboard.press("shift")
         eventsDelay()
         logging.debug(f"Click on point {self} with shift")
         mouse.click(button)
         eventsDelay()
-        keyboard.release('shift')
+        keyboard.release("shift")
 
     def hold(self, button=mouse.LEFT):
         self.move()

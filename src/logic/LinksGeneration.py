@@ -5,7 +5,7 @@ from src.utils.utils import loadRecipesForSelectedVersion
 MAX_PATH_LEN = 16
 DEFAULT_INITIAL_PATH_LEN = 999999
 
-'''
+"""
 Описание работы алгоритма:
 
 1. Надо узнать, какой аспект с каким будем соединять, для этого: 
@@ -28,7 +28,8 @@ DEFAULT_INITIAL_PATH_LEN = 999999
 4.2. Говорим, что все аспекты соединены со всеми базовыми аспектами, с которыми был соединён стартовый, и с которыми был соединён целевой
 
 5. Заканчиваем, когда все базовые аспекты соединены друг с другом
-'''
+"""
+
 
 class AspectGraph:
     graph: dict[str, set[str]]
@@ -56,11 +57,14 @@ class AspectGraph:
         class PathElement:
             path: list[str]
             length: int
+
             def __init__(self, path: list[str], length: int):
                 self.path = path
                 self.length = length
+
             def __repr__(self):
                 return f"{'{'}{self.length}{'}'}"
+
             def __lt__(self, other):
                 return self.length < other.length
 
@@ -94,7 +98,14 @@ class Aspect:
     def __repr__(self):
         return f"{self.name}{self.coord}"
 
-    def get_min_distance_path_to(self, target_aspect, hexagon_field_radius: int, holesSet: set[(int, int)], initial_aspects: set, min_length: int = 0) -> tuple[int, set[tuple[int, int]]]:
+    def get_min_distance_path_to(
+        self,
+        target_aspect,
+        hexagon_field_radius: int,
+        holesSet: set[(int, int)],
+        initial_aspects: set,
+        min_length: int = 0,
+    ) -> tuple[int, set[tuple[int, int]]]:
         # Алгоритм Дейкстры
         # Для каждой клетки храним минимальное расстояние до неё. Или None, если клетка ещё не посещена
 
@@ -102,13 +113,17 @@ class Aspect:
             path: list[(int, int)]
             dist: int = DEFAULT_INITIAL_PATH_LEN
             coord: (int, int)
+
             def __init__(self, x: int, y: int):
                 self.coord = (x, y)
                 self.path = []
+
             def __repr__(self):
                 return f"{self.coord}{'{'}{self.dist}{'}'}"
+
             def __lt__(self, other):
                 return self.dist < other.dist
+
         cells: dict[(int, int), PathElement] = {}
         unvisited_nodes: set[PathElement] = set()
         # Создаем все клетки
@@ -133,6 +148,7 @@ class Aspect:
                 cell_neighbours = [(-1, 0), (1, 0), (0, -1), (0, 1), (-1, -1), (1, -1)]
             else:
                 cell_neighbours = [(-1, 0), (1, 0), (0, -1), (0, 1), (-1, 1), (1, 1)]
+
             # Приоритизируем его, чтобы первым делом поиск производился в сторону других аспектов
             def comparator(coord):
                 totalDiff = 0
@@ -140,10 +156,14 @@ class Aspect:
                     totalDiff += abs(initial_aspect.coord[0] - coord[0])
                     totalDiff += abs(initial_aspect.coord[1] - coord[1])
                 return totalDiff
+
             cell_neighbours.sort(key=comparator)
             # Приведенный ниже блок кода извлекает соседей текущего узла и обновляет их расстояния.
             for neighbor_direction in cell_neighbours:
-                neighbor_coord = (current_node.coord[0] + neighbor_direction[0], current_node.coord[1] + neighbor_direction[1])
+                neighbor_coord = (
+                    current_node.coord[0] + neighbor_direction[0],
+                    current_node.coord[1] + neighbor_direction[1],
+                )
                 if (neighbor_coord in holesSet) and (neighbor_coord != target_aspect.coord):
                     continue
                 neighborNode = cells.get(neighbor_coord, None)
@@ -162,7 +182,12 @@ class Aspect:
         return cells[target_aspect.coord].dist, cells[target_aspect.coord].path
 
 
-def generateLinkMap(existing_aspects: dict[(int, int), str], holes_set: set[(int, int)], available_aspects: set[str], interruptingFlag: list[bool]) -> dict[(int, int): str]:
+def generateLinkMap(
+    existing_aspects: dict[(int, int), str],
+    holes_set: set[(int, int)],
+    available_aspects: set[str],
+    interruptingFlag: list[bool],
+) -> dict[(int, int):str]:
     logging.debug("-----------")
     logging.info("START SOLVING")
     logging.debug("#---0. Setting up:")
@@ -226,7 +251,9 @@ def generateLinkMap(existing_aspects: dict[(int, int), str], holes_set: set[(int
                         if end_initial_aspect not in end_aspect_candidate.linked_to_initials:
                             continue
 
-                        path_len, _ = start_aspect_candidate.get_min_distance_path_to(end_aspect_candidate, hexagon_field_radius, holes_set, initial_aspects)
+                        path_len, _ = start_aspect_candidate.get_min_distance_path_to(
+                            end_aspect_candidate, hexagon_field_radius, holes_set, initial_aspects
+                        )
                         if path_len < min_len_between_aspects:
                             min_start_aspect = start_aspect_candidate
                             min_end_aspect = end_aspect_candidate
@@ -236,7 +263,9 @@ def generateLinkMap(existing_aspects: dict[(int, int), str], holes_set: set[(int
                 logging.error(f"Warning: Cell with aspect {start_initial_aspect} is unreachable from any other aspects")
                 return existing_aspects
 
-            logging.debug(f"Min distance {min_len_between_aspects} found from aspect: {min_start_aspect} to aspect: {min_end_aspect}")
+            logging.debug(
+                f"Min distance {min_len_between_aspects} found from aspect: {min_start_aspect} to aspect: {min_end_aspect}"
+            )
             # К выбранному аспекту пытаемся построить цепочки. Сначала самую короткую, потом всё длиннее
             end_initial_aspect = min_end_initial_aspect
             end_aspect = min_end_aspect
@@ -251,9 +280,13 @@ def generateLinkMap(existing_aspects: dict[(int, int), str], holes_set: set[(int
                     continue
                 logging.debug(f"Path with len: {target_path_len} generated: {aspects_path}")
                 # Если цепочка найдена, пытаемся пройти найти маршрут заданной длины
-                logging.debug(f"#---3. Trying to find coordinates path with len {target_path_len} from {start_aspect} to {end_aspect}")
+                logging.debug(
+                    f"#---3. Trying to find coordinates path with len {target_path_len} from {start_aspect} to {end_aspect}"
+                )
                 all_holes_set = holes_set | set(map(lambda asp: asp.coord, aspects_on_field))
-                min_len_between_aspects, coordsPath = start_aspect.get_min_distance_path_to(end_aspect, hexagon_field_radius, all_holes_set, initial_aspects, target_path_len)
+                min_len_between_aspects, coordsPath = start_aspect.get_min_distance_path_to(
+                    end_aspect, hexagon_field_radius, all_holes_set, initial_aspects, target_path_len
+                )
                 if min_len_between_aspects > MAX_PATH_LEN:
                     logging.debug(f"Coordinates path with len {target_path_len} not found")
                     target_path_len += 1
@@ -272,6 +305,7 @@ def generateLinkMap(existing_aspects: dict[(int, int), str], holes_set: set[(int
 
                 # Recursive update all aspects that linked to this
                 visited_initials = set()
+
                 def update_all_linked_aspects(from_initial):
                     if (from_initial in visited_initials) or interruptingFlag[0]:
                         return
@@ -279,6 +313,7 @@ def generateLinkMap(existing_aspects: dict[(int, int), str], holes_set: set[(int
                     visited_initials.add(from_initial)
                     for initial_aspect in from_initial.linked_to_initials:
                         update_all_linked_aspects(initial_aspect)
+
                 update_all_linked_aspects(end_initial_aspect)
                 logging.debug(f"Aspects {visited_initials} is now linked between themselves")
 
@@ -290,4 +325,3 @@ def generateLinkMap(existing_aspects: dict[(int, int), str], holes_set: set[(int
                 return existing_aspects
     logging.info(f"Final solving: {result}")
     return result
-

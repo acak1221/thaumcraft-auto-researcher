@@ -9,19 +9,20 @@ from src.utils.utils import distance
 
 class Point(_Object):
     def __init__(
-            self,
-            x: float,
-            y: float,
-            size=DEFAULT_POINT_SIZE,
-            color=QColor(DEFAULT_COLOR),
-            lineWidth=DEFAULT_LINE_WIDTH,
-            movable=False,
-            hoverable: bool = False,
-            hoverColor: QColor = None,
-            onMoveCallback: Callable = None,
-            onClickCallback: Callable = None,
-            onClickCallbackArgs: list = [],
-            clickable: bool = None):
+        self,
+        x: float,
+        y: float,
+        size=DEFAULT_POINT_SIZE,
+        color=QColor(DEFAULT_COLOR),
+        lineWidth=DEFAULT_LINE_WIDTH,
+        movable=False,
+        hoverable: bool = False,
+        hoverColor: QColor = None,
+        onMoveCallback: Callable = None,
+        onClickCallback: Callable = None,
+        onClickCallbackArgs: list = [],
+        clickable: bool = None,
+    ):
         self.x = x
         self.y = y
         self.size = size
@@ -38,15 +39,17 @@ class Point(_Object):
         super().__init__()
 
     def render(self, painter: QPainter):
-        if not super().render(painter): return
+        if not super().render(painter):
+            return
         painter.drawLine(int(self.x), int(self.y - self.size / 2), int(self.x), int(self.y + self.size / 2))
         painter.drawLine(int(self.x - self.size / 2), int(self.y), int(self.x + self.size / 2), int(self.y))
         if self.movable:
             color = self._brush.color()
             color.setAlpha(10)
             self._brush.setColor(color)
-            painter.drawEllipse(int(self.x - self.size / 3), int(self.y - self.size / 3), int(self.size / 3 * 2),
-                                int(self.size / 3 * 2))
+            painter.drawEllipse(
+                int(self.x - self.size / 3), int(self.y - self.size / 3), int(self.size / 3 * 2), int(self.size / 3 * 2)
+            )
 
     def isHover(self, x: float, y: float):
         if not self.visible:

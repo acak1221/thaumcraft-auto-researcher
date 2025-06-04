@@ -38,6 +38,7 @@ class _Object:
         self.id = next(_objectIdValue)
         self._currentColor = self.color
         self._init()
+
     def setColor(self, color: QColor):
         self.color = color
         self._currentColor = color
@@ -50,7 +51,7 @@ class _Object:
     def _init(self):
         self._pen = QPen(self._currentColor, self.lineWidth, cap=Qt.RoundCap, join=Qt.RoundJoin)
         if self.lineWidth == 0:
-            self._pen.setColor(QColor('transparent'))
+            self._pen.setColor(QColor("transparent"))
         self._brush = QBrush(self._currentColor)
 
     def render(self, painter: QPainter) -> bool:
@@ -74,9 +75,9 @@ class _Object:
             if newColor is None:
                 oldColor = getattr(self, targetFieldName)
                 if oldColor.lightness() > 230:
-                    additionalColor = QColor('black')
+                    additionalColor = QColor("black")
                 else:
-                    additionalColor = QColor('white')
+                    additionalColor = QColor("white")
                 newColor = mixColors(oldColor, additionalColor, 0.2)
             self._setCurrentColor(newColor)
         else:

@@ -17,10 +17,10 @@ class ObjectPrediction:
 
 class OnnxObjectDetection:
     def __init__(
-            self,
-            model_path: str,
-            class_names: list[str],
-            img_size: int,  # Высота/ширина квадратного изображения
+        self,
+        model_path: str,
+        class_names: list[str],
+        img_size: int,  # Высота/ширина квадратного изображения
     ):
         self.model = onnxruntime.InferenceSession(model_path)
         self.class_names = class_names
@@ -51,7 +51,6 @@ class OnnxObjectDetection:
         predictions = np.concatenate([boxes, confs, class_confs], axis=2)
         return predictions
 
-
     def predict(self, image: Image.Image) -> list[ObjectPrediction]:
         """Поиск аспектов на изображении image"""
         image = image.convert("RGB")
@@ -60,14 +59,19 @@ class OnnxObjectDetection:
         scale = max(origin_shape) / self.img_size
         predicted_arrays = self._predict_raw(preproc_image)
         postprocessed = postprocess(predicted_arrays, scale, origin_shape)[0]
-        result = list(map(lambda prediction: ObjectPrediction(
-            x=prediction[0] + abs(prediction[0] - prediction[2]) / 2,
-            y=prediction[1] + abs(prediction[1] - prediction[3]) / 2,
-            width=abs(prediction[0] - prediction[2]),
-            height=abs(prediction[1] - prediction[3]),
-            predictionName=self.class_names[int(prediction[6])],
-            confidence=prediction[4],
-        ), postprocessed))
+        result = list(
+            map(
+                lambda prediction: ObjectPrediction(
+                    x=prediction[0] + abs(prediction[0] - prediction[2]) / 2,
+                    y=prediction[1] + abs(prediction[1] - prediction[3]) / 2,
+                    width=abs(prediction[0] - prediction[2]),
+                    height=abs(prediction[1] - prediction[3]),
+                    predictionName=self.class_names[int(prediction[6])],
+                    confidence=prediction[4],
+                ),
+                postprocessed,
+            )
+        )
 
         return result
 
@@ -84,8 +88,8 @@ def pad_to_square(img: np.ndarray) -> np.ndarray:
 
 
 def preprocess(
-        image: Image.Image,
-        size: int,
+    image: Image.Image,
+    size: int,
 ) -> np.ndarray:
     image = np.array(image)
     image = pad_to_square(image)
@@ -98,12 +102,12 @@ def preprocess(
 
 
 def postprocess(
-        predictions,
-        scale: float,
-        origin_shape: tuple[int, int],
-        confidence: float = 0.4,
-        iou_threshold: float = 0.5,
-        max_detections: int = 300,
+    predictions,
+    scale: float,
+    origin_shape: tuple[int, int],
+    confidence: float = 0.4,
+    iou_threshold: float = 0.5,
+    max_detections: int = 300,
 ) -> list:
     """Postprocesses the object detection predictions.
 
@@ -128,13 +132,13 @@ def postprocess(
 
 
 def w_np_non_max_suppression(
-        prediction,
-        conf_thresh: float = 0.25,
-        iou_thresh: float = 0.45,
-        class_agnostic: bool = False,
-        max_detections: int = 300,
-        num_masks: int = 0,
-        box_format: str = "xywh",
+    prediction,
+    conf_thresh: float = 0.25,
+    iou_thresh: float = 0.45,
+    class_agnostic: bool = False,
+    max_detections: int = 300,
+    num_masks: int = 0,
+    box_format: str = "xywh",
 ):
     """Applies non-maximum suppression to predictions.
 
@@ -165,9 +169,7 @@ def w_np_non_max_suppression(
     elif box_format == "xyxy":
         pass
     else:
-        raise ValueError(
-            "box_format must be either 'xywh' or 'xyxy', got {}".format(box_format)
-        )
+        raise ValueError("box_format must be either 'xywh' or 'xyxy', got {}".format(box_format))
 
     batch_predictions = []
     for np_image_i, np_image_pred in enumerate(prediction):
@@ -175,20 +177,16 @@ def w_np_non_max_suppression(
         np_conf_mask = np_image_pred[:, 4] >= conf_thresh
 
         np_image_pred = np_image_pred[np_conf_mask]
-        cls_confs = np_image_pred[:, 5: num_classes + 5]
-        if (
-                np_image_pred.shape[0] == 0
-                or np_image_pred.shape[1] == 0
-                or cls_confs.shape[1] == 0
-        ):
+        cls_confs = np_image_pred[:, 5 : num_classes + 5]
+        if np_image_pred.shape[0] == 0 or np_image_pred.shape[1] == 0 or cls_confs.shape[1] == 0:
             batch_predictions.append(filtered_predictions)
             continue
 
         np_class_conf = np.max(cls_confs, 1)
-        np_class_pred = np.argmax(np_image_pred[:, 5: num_classes + 5], 1)
+        np_class_pred = np.argmax(np_image_pred[:, 5 : num_classes + 5], 1)
         np_class_conf = np.expand_dims(np_class_conf, axis=1)
         np_class_pred = np.expand_dims(np_class_pred, axis=1)
-        np_mask_pred = np_image_pred[:, 5 + num_classes:]
+        np_mask_pred = np_image_pred[:, 5 + num_classes :]
         np_detections = np.append(
             np.append(
                 np.append(np_image_pred[:, :5], np_class_conf, axis=1),
@@ -202,24 +200,14 @@ def w_np_non_max_suppression(
         np_unique_labels = np.unique(np_detections[:, 6])
 
         if class_agnostic:
-            np_detections_class = sorted(
-                np_detections, key=lambda row: row[4], reverse=True
-            )
-            filtered_predictions.extend(
-                non_max_suppression_fast(np.array(np_detections_class), iou_thresh)
-            )
+            np_detections_class = sorted(np_detections, key=lambda row: row[4], reverse=True)
+            filtered_predictions.extend(non_max_suppression_fast(np.array(np_detections_class), iou_thresh))
         else:
             for c in np_unique_labels:
                 np_detections_class = np_detections[np_detections[:, 6] == c]
-                np_detections_class = sorted(
-                    np_detections_class, key=lambda row: row[4], reverse=True
-                )
-                filtered_predictions.extend(
-                    non_max_suppression_fast(np.array(np_detections_class), iou_thresh)
-                )
-        filtered_predictions = sorted(
-            filtered_predictions, key=lambda row: row[4], reverse=True
-        )
+                np_detections_class = sorted(np_detections_class, key=lambda row: row[4], reverse=True)
+                filtered_predictions.extend(non_max_suppression_fast(np.array(np_detections_class), iou_thresh))
+        filtered_predictions = sorted(filtered_predictions, key=lambda row: row[4], reverse=True)
         batch_predictions.append(filtered_predictions[:max_detections])
     return batch_predictions
 
@@ -274,18 +262,16 @@ def non_max_suppression_fast(boxes, overlapThresh):
         # compute the ratio of overlap
         overlap = (w * h) / area[idxs[:last]]
         # delete all indexes from the index list that have
-        idxs = np.delete(
-            idxs, np.concatenate(([last], np.where(overlap > overlapThresh)[0]))
-        )
+        idxs = np.delete(idxs, np.concatenate(([last], np.where(overlap > overlapThresh)[0])))
     # return only the bounding boxes that were picked using the
     # integer data type
     return boxes[pick].astype("float")
 
 
 def post_process_bboxes(
-        predictions: list[list[float]],
-        scale: float,
-        origin_shape: tuple[int, int],
+    predictions: list[list[float]],
+    scale: float,
+    origin_shape: tuple[int, int],
 ) -> list[list[list[float]]]:
     scaled_predictions = []
     for i, batch_predictions in enumerate(predictions):
@@ -317,19 +303,11 @@ def scale_bboxes(bboxes: np.ndarray, scale_x: float, scale_y: float) -> np.ndarr
 
 
 def clip_boxes_coordinates(
-        predicted_bboxes: np.ndarray,
-        origin_shape: tuple[int, int],
+    predicted_bboxes: np.ndarray,
+    origin_shape: tuple[int, int],
 ) -> np.ndarray:
-    predicted_bboxes[:, 0] = np.round(
-        np.clip(predicted_bboxes[:, 0], a_min=0, a_max=origin_shape[1])
-    )
-    predicted_bboxes[:, 2] = np.round(
-        np.clip(predicted_bboxes[:, 2], a_min=0, a_max=origin_shape[1])
-    )
-    predicted_bboxes[:, 1] = np.round(
-        np.clip(predicted_bboxes[:, 1], a_min=0, a_max=origin_shape[0])
-    )
-    predicted_bboxes[:, 3] = np.round(
-        np.clip(predicted_bboxes[:, 3], a_min=0, a_max=origin_shape[0])
-    )
+    predicted_bboxes[:, 0] = np.round(np.clip(predicted_bboxes[:, 0], a_min=0, a_max=origin_shape[1]))
+    predicted_bboxes[:, 2] = np.round(np.clip(predicted_bboxes[:, 2], a_min=0, a_max=origin_shape[1]))
+    predicted_bboxes[:, 1] = np.round(np.clip(predicted_bboxes[:, 1], a_min=0, a_max=origin_shape[0]))
+    predicted_bboxes[:, 3] = np.round(np.clip(predicted_bboxes[:, 3], a_min=0, a_max=origin_shape[0]))
     return predicted_bboxes

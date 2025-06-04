@@ -35,20 +35,25 @@ class LinkableValue:
         if isinstance(other, LinkableValue):
             return self.val < other.val
         return self.val < other
+
     def __le__(self, other):
         if isinstance(other, LinkableValue):
             return self.val <= other.val
         return self.val <= other
+
     def __gt__(self, other):
         if isinstance(other, LinkableValue):
             return self.val > other.val
         return self.val > other
+
     def __ge__(self, other):
         if isinstance(other, LinkableValue):
             return self.val >= other.val
         return self.val >= other
+
     def __repr__(self):
         return str(self.val)
+
     # def __st__(self):
     #     return str(self.val)
 
@@ -57,6 +62,7 @@ class LinkableCoord:
     def __init__(self, x: float, y: float):
         self.x = LinkableValue(x)
         self.y = LinkableValue(y)
+
     # def __str__(self):
     #     return f'({self.x}, {self.y})'
 

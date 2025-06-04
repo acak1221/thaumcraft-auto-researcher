@@ -9,19 +9,20 @@ from src.utils.utils import distance
 
 class Circle(_Object):
     def __init__(
-            self,
-            x: float,
-            y: float,
-            r: float,
-            color=QColor(DEFAULT_COLOR),
-            lineWidth=DEFAULT_LINE_WIDTH,
-            movable: bool = False,
-            hoverable: bool = False,
-            hoverColor: QColor = None,
-            onMoveCallback: Callable = None,
-            onClickCallback: Callable = None,
-            onClickCallbackArgs: list = [],
-            clickable: bool = None):  # , fill=None, fillOpacity=1):
+        self,
+        x: float,
+        y: float,
+        r: float,
+        color=QColor(DEFAULT_COLOR),
+        lineWidth=DEFAULT_LINE_WIDTH,
+        movable: bool = False,
+        hoverable: bool = False,
+        hoverColor: QColor = None,
+        onMoveCallback: Callable = None,
+        onClickCallback: Callable = None,
+        onClickCallbackArgs: list = [],
+        clickable: bool = None,
+    ):  # , fill=None, fillOpacity=1):
         self.x = x
         self.y = y
         self.r = r
@@ -40,7 +41,8 @@ class Circle(_Object):
         super().__init__()
 
     def render(self, painter: QPainter):
-        if not super().render(painter): return
+        if not super().render(painter):
+            return
         painter.drawEllipse(int(self.x - self.r), int(self.y - self.r), int(self.r * 2), int(self.r * 2))
 
     def isHover(self, x: float, y: float):
