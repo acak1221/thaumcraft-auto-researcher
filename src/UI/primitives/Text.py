@@ -20,26 +20,27 @@ class Align(int):
 
 class Text(_Object):
     def __init__(
-            self,
-            x: float,
-            y: float,
-            text: str,
-            font=QFont(DEFAULT_FONT),
-            color=QColor(DEFAULT_COLOR),
-            align: Align = Align.left,
-            withBackground=False,
-            backgroundColor=QColor('black'),
-            backgroundOpacity=0.5,
-            padding: int | tuple[int, int, int, int] = DEFAULT_PADDING,
-            movable: bool = False,
-            hoverable: bool = False,
-            hoverColor: QColor = None,
-            onMoveCallback: Callable = None,
-            UI=None,
-            onClickCallback: Callable = None,
-            onClickCallbackArgs: list = [],
-            clickable: bool = None):
-        lines = text.split('\n')
+        self,
+        x: float,
+        y: float,
+        text: str,
+        font=QFont(DEFAULT_FONT),
+        color=QColor(DEFAULT_COLOR),
+        align: Align = Align.left,
+        withBackground=False,
+        backgroundColor=QColor("black"),
+        backgroundOpacity=0.5,
+        padding: int | tuple[int, int, int, int] = DEFAULT_PADDING,
+        movable: bool = False,
+        hoverable: bool = False,
+        hoverColor: QColor = None,
+        onMoveCallback: Callable = None,
+        UI=None,
+        onClickCallback: Callable = None,
+        onClickCallbackArgs: list = [],
+        clickable: bool = None,
+    ):
+        lines = text.split("\n")
         self.w = max(map(len, lines)) * font.pointSize() / 1.05
         self.h = font.pointSize() * 2 * len(lines)
         self.x = x
@@ -48,7 +49,7 @@ class Text(_Object):
         self.font = font
         self.color = color
         self.align = align
-        self.backgroundColor = QColor('transparent')
+        self.backgroundColor = QColor("transparent")
         self.withBackground = withBackground
         self.onMoveCallback = onMoveCallback
         self.onClickCallback = onClickCallback
@@ -84,14 +85,18 @@ class Text(_Object):
         self._currentColor = self.backgroundColor
 
     def render(self, painter: QPainter):
-        if not super().render(painter): return
+        if not super().render(painter):
+            return
         painter.setFont(self.font)
         if self.withBackground:
             painter.fillRect(int(self.x), int(self.y), int(self.w), int(self.h), self._currentColor)
             painter.drawText(
-                int(self.x + self.padding[3]), int(self.y + self.padding[0]),
-                int(self.w - self.padding[1] - self.padding[3]), int(self.h - self.padding[0] - self.padding[2]),
-                self.align, self.text
+                int(self.x + self.padding[3]),
+                int(self.y + self.padding[0]),
+                int(self.w - self.padding[1] - self.padding[3]),
+                int(self.h - self.padding[0] - self.padding[2]),
+                self.align,
+                self.text,
             )
         else:
             painter.drawText(int(self.x), int(self.y), int(self.w), int(self.h), self.align, self.text)
@@ -106,10 +111,7 @@ class Text(_Object):
     def isHover(self, x: float, y: float):
         if not self.visible:
             return False
-        return (
-                self.x <= x <= self.x + self.w and
-                self.y <= y <= self.y + self.h
-        )
+        return self.x <= x <= self.x + self.w and self.y <= y <= self.y + self.h
 
     def setColor(self, color: QColor):
         super().setColor(color)
@@ -117,7 +119,7 @@ class Text(_Object):
 
     def setText(self, text: str):
         self.text = text
-        lines = text.split('\n')
+        lines = text.split("\n")
         self.w = max(map(len, lines)) * self.font.pointSize() / 1.05
         self.h = self.font.pointSize() * 2 * len(lines)
         if self.withBackground:

@@ -7,7 +7,11 @@ from src.utils.constants import LOG_FILE_PATH, MAX_LOG_FILE_SIZE_BYTES, DEBUG, L
 from src.utils.utils import createDirByFilePath
 
 createDirByFilePath(LOG_FILE_PATH)
-loggingHandlers = [logging.handlers.RotatingFileHandler(filename=LOG_FILE_PATH, maxBytes=MAX_LOG_FILE_SIZE_BYTES, backupCount=MAX_LOG_FILES_COUNT)]
+loggingHandlers = [
+    logging.handlers.RotatingFileHandler(
+        filename=LOG_FILE_PATH, maxBytes=MAX_LOG_FILE_SIZE_BYTES, backupCount=MAX_LOG_FILES_COUNT
+    )
+]
 if DEBUG:
     loggingHandlers.append(logging.StreamHandler(sys.stdout))  # output both to console and log-files
 logging.basicConfig(
@@ -19,6 +23,7 @@ logging.basicConfig(
 
 UI = OverlayUI(opacity=1)
 
+
 def main():
     try:
         Scenarios.beReadyForCreatingTI(UI)
@@ -26,8 +31,7 @@ def main():
         logging.critical(f"Error excepted in main thread: {e}")
 
 
-
-if __name__ == '__main__':
+if __name__ == "__main__":
     logging.info("Program started")
     logging.info("###############")
     try:

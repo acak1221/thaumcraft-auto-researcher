@@ -5,11 +5,11 @@ from PIL import Image
 
 class OnnxClassification:
     def __init__(
-            self,
-            model_path: str,
-            class_names: list[str],
-            img_height: int,
-            img_width: int,
+        self,
+        model_path: str,
+        class_names: list[str],
+        img_height: int,
+        img_width: int,
     ):
         self.model = onnxruntime.InferenceSession(model_path)
         self.class_names = class_names
@@ -25,7 +25,9 @@ class OnnxClassification:
         image = image.convert("L")
         image_resized = image.resize((self.img_width, self.img_height), resample=Image.Resampling.LANCZOS)
         resized = np.array(image_resized)
-        resized = np.pad(resized, 5)  # TODO: сделать менее хардкодным. Нужно, потому что при обучении использовался паддинг 5 пикс.
+        resized = np.pad(
+            resized, 5
+        )  # TODO: сделать менее хардкодным. Нужно, потому что при обучении использовался паддинг 5 пикс.
 
         img_in = resized.astype(np.float32)
         img_in /= 255.0

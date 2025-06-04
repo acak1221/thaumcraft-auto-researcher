@@ -14,23 +14,24 @@ def opacityToAlpha(opacity: float) -> int:
 
 class Rect(_Object):
     def __init__(
-            self,
-            x1: float,
-            y1: float,
-            x2: float,
-            y2: float,
-            color=QColor(DEFAULT_COLOR),
-            lineWidth=DEFAULT_LINE_WIDTH,
-            dashed=False,
-            fill=None,
-            fillOpacity=1,
-            movable: bool = False,
-            hoverable: bool = False,
-            hoverColor: QColor = None,
-            onMoveCallback: Callable = None,
-            onClickCallback: Callable = None,
-            onClickCallbackArgs: list = [],
-            clickable: bool = None):
+        self,
+        x1: float,
+        y1: float,
+        x2: float,
+        y2: float,
+        color=QColor(DEFAULT_COLOR),
+        lineWidth=DEFAULT_LINE_WIDTH,
+        dashed=False,
+        fill=None,
+        fillOpacity=1,
+        movable: bool = False,
+        hoverable: bool = False,
+        hoverColor: QColor = None,
+        onMoveCallback: Callable = None,
+        onClickCallback: Callable = None,
+        onClickCallbackArgs: list = [],
+        clickable: bool = None,
+    ):
         self.LT = Point(x1, y1, color)
         self.RT = Point(x2, y1, color)
         self.RB = Point(x2, y2, color)
@@ -44,7 +45,8 @@ class Rect(_Object):
         self.color = color
         self.lineWidth = lineWidth
         self.fill = fill
-        if fill is not None: self.fill.setAlpha(opacityToAlpha(fillOpacity))
+        if fill is not None:
+            self.fill.setAlpha(opacityToAlpha(fillOpacity))
         self.movable = movable
         self.hoverable = hoverable
         self.hoverColor = hoverColor
@@ -56,19 +58,20 @@ class Rect(_Object):
         super().__init__()
 
     def render(self, painter: QPainter):
-        if not super().render(painter): return
+        if not super().render(painter):
+            return
         self.T.render(painter)
         self.R.render(painter)
         self.B.render(painter)
         self.L.render(painter)
-        if self.fill is not None: painter.fillRect(int(self.LT.x), int(self.LT.y), int(self.w), int(self.h), self.fill)
+        if self.fill is not None:
+            painter.fillRect(int(self.LT.x), int(self.LT.y), int(self.w), int(self.h), self.fill)
 
     def isHover(self, x: float, y: float):
         if not self.visible:
             return False
-        return (
-                min(self.LT.x, self.RB.x) <= x <= max(self.LT.x, self.RB.x) and
-                min(self.LT.y, self.RB.y) <= y <= max(self.LT.y, self.RB.y)
+        return min(self.LT.x, self.RB.x) <= x <= max(self.LT.x, self.RB.x) and min(self.LT.y, self.RB.y) <= y <= max(
+            self.LT.y, self.RB.y
         )
 
     def setLx(self, val):

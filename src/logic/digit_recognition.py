@@ -23,7 +23,9 @@ def remove_same_spot_predictions(digit_predictions: list[ObjectPrediction]) -> l
     Для случаев, когда на одну цифру приходится несколько предсказаний, расположенных примерно в одном месте.
     Убирает лишние предсказания, оставляя только самые уверенные
     """
-    MIN_VALID_DIFF = 2.0  # Минимальная разница в координатах между предсказаниями, когда предсказания считаются для разных цифр
+    MIN_VALID_DIFF = (
+        2.0  # Минимальная разница в координатах между предсказаниями, когда предсказания считаются для разных цифр
+    )
     prev_x = -666
     result = []
     digit_predictions.sort(key=lambda pred: pred.x)
@@ -39,7 +41,7 @@ def remove_same_spot_predictions(digit_predictions: list[ObjectPrediction]) -> l
 
 
 def group_aspects_and_digits(
-        predictions: list[ObjectPrediction]
+    predictions: list[ObjectPrediction],
 ) -> list[tuple[ObjectPrediction, list[ObjectPrediction]]]:
     """
     Группирует цифры по аспектам, к которым цифра относится
