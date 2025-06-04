@@ -135,13 +135,8 @@ class _Window(QMainWindow):
         self.setAttribute(Qt.WA_TranslucentBackground)
         self.setWindowOpacity(opacity)
 
-        def onKeyboardEvent(event: keyboard.KeyboardEvent):
+        def onKeyboardPress(event: keyboard.KeyboardEvent):
             pressedKeyCode = event.scan_code
-            if event.event_type == keyboard.KEY_UP:
-                self.holdingKeys.discard(pressedKeyCode)
-                return
-            if event.event_type != keyboard.KEY_DOWN:
-                return
             self.holdingKeys.add(pressedKeyCode)
 
             # print(f"{event.name}, {event.scan_code}")
@@ -149,7 +144,12 @@ class _Window(QMainWindow):
                 if set(keysCombination).issubset(self.holdingKeys):
                     self.keysCallbacks[keysCombination][0](*self.keysCallbacks[keysCombination][1])
 
-        keyboard._listener.add_handler(onKeyboardEvent)
+        def onKeyboardRelease(event: keyboard.KeyboardEvent):
+            pressedKeyCode = event.scan_code
+            self.holdingKeys.discard(pressedKeyCode)
+
+        keyboard.on_press(onKeyboardPress)
+        keyboard.on_release(onKeyboardRelease)
 
         self.startTimer(FRAME_TIME)
 
