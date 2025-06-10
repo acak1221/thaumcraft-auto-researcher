@@ -171,8 +171,13 @@ def loadRecipesForSelectedVersion() -> dict[str, list[str, str]] | None:
         logging.error(f"Selected unknown version: {selectedVersion}")
         return None
     addonsRecipes = readJSONConfig(THAUM_ADDONS_ASPECT_RECIPES_CONFIG_PATH)
-    for addonRecipes in addonsRecipes.values():
-        totalRecipes |= addonRecipes
+    if addonsRecipes:
+        for addonRecipes in addonsRecipes.values():
+            totalRecipes |= addonRecipes
+    else:
+        logging.debug(
+            f"No addon recipes found at {THAUM_ADDONS_ASPECT_RECIPES_CONFIG_PATH}"
+        )
     return totalRecipes
 
 
