@@ -16,6 +16,8 @@ from src.utils.LinkableValue import editLinkableValue
 from src.utils.constants import FPS
 
 FRAME_TIME = int(1000 / FPS)
+MAX_OBJECTS = 1000  # Limit to prevent memory leaks
+MAX_TIMED_EVENTS = 100  # Limit timed events
 
 
 class KeyboardKeys(Enum):
@@ -164,25 +166,42 @@ class _Window(QMainWindow):
             eventsToDelete = set()
             for event in eventsToProcess:
                 event.decreaseTime(FRAME_TIME)
-                event.execOnChangeCallback()
-                if event.execCallbackIfTime0():
-                    eventsToDelete.add(event)
+                try:
+                    event.execOnChangeCallback()
+                    if event.execCallbackIfTime0():
+                        eventsToDelete.add(event)
+                except Exception as e:
+                    logging.error(f"Error in timed event callback: {e}")
+                    eventsToDelete.add(event)  # Remove problematic event
+            
             for event in eventsToDelete:
-                self.timedEvents.remove(event)
+                self.timedEvents.discard(event)  # Use discard to avoid KeyError
+            
             self.update()
         except KeyboardInterrupt:
             self.exit()
+        except Exception as e:
+            logging.error(f"Error in timer event: {e}")
 
     def paintEvent(self, event):
         try:
             painter = QPainter(self)
             painter.setRenderHint(QPainter.Antialiasing, True)
             objects = self.objects.copy()
-            # print(len(objects), objects)
+            
+            # Render only visible objects for performance
             for obj in objects:
-                obj.render(painter)
+                try:
+                    if hasattr(obj, 'isVisible') and not obj.isVisible():
+                        continue
+                    obj.render(painter)
+                except Exception as e:
+                    logging.error(f"Error rendering object {obj}: {e}")
+                    
         except KeyboardInterrupt:
             self.exit()
+        except Exception as e:
+            logging.error(f"Error in paint event: {e}")
 
     def _updateObjectsHoverState(self, event: QMouseEvent, isMouseRelease: bool = False):
         for obj in self.objects:
@@ -256,6 +275,14 @@ class _Window(QMainWindow):
     def setTimeout(
         self, timeoutMs: int, callback: Callable, args=[], kwargs={}, onChangeCallback=lambda timeLeft: None
     ):
+        # Prevent memory leaks by limiting timed events
+        if len(self.timedEvents) >= MAX_TIMED_EVENTS:
+            # Remove oldest events
+            events_list = list(self.timedEvents)
+            events_list.sort(key=lambda e: e.timeLeftMs)
+            self.timedEvents = set(events_list[-MAX_TIMED_EVENTS//2:])
+            logging.warning(f"Timed events limit reached, removed old events. Current count: {len(self.timedEvents)}")
+        
         self.timedEvents.add(TimedEvent(timeoutMs, callback, args, kwargs, onChangeCallback))
         # or simpler but not works: QtCore.QTimer.singleShot(timeoutMs, callback)
 
@@ -266,6 +293,13 @@ class _Window(QMainWindow):
     def addObject(self, obj: UIPrimitive):
         if not isinstance(obj, UIPrimitive):
             raise TypeError(f"Trying to add object that is not one of UIPrimitives. Object type: {type(obj)}")
+        
+        # Prevent memory leaks by limiting object count
+        if len(self.objects) >= MAX_OBJECTS:
+            # Remove oldest objects, keep recent half
+            self.objects = self.objects[-MAX_OBJECTS//2:]
+            logging.warning(f"Object limit reached, removed old objects. Current count: {len(self.objects)}")
+        
         self.objects.append(obj)
         return obj
 

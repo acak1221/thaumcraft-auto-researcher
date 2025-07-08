@@ -18,7 +18,10 @@ from src.utils.constants import (
 )
 
 
-def distance(x1, y1, x2, y2):
+def distance(x1: float, y1: float, x2: float, y2: float) -> float:
+    """Calculate Euclidean distance between two points."""
+    if not all(isinstance(coord, (int, float)) for coord in [x1, y1, x2, y2]):
+        raise TypeError("Coordinates must be numbers")
     return math.sqrt((x1 - x2) ** 2 + (y1 - y2) ** 2)
 
 
@@ -40,9 +43,24 @@ def createDirByFilePath(fullpath: str):
 
 
 def saveJSONConfig(fullpath: str, jsonToSave: dict):
+    """Safely save JSON configuration with proper error handling."""
     createDirByFilePath(fullpath)
-    with open(fullpath, "w") as file:
-        json.dump(jsonToSave, file, indent=4, ensure_ascii=False, default=linkableValueDumpsToJSON)
+    try:
+        # Write to temporary file first, then rename to avoid corruption
+        temp_path = fullpath + '.tmp'
+        with open(temp_path, "w", encoding='utf-8') as file:
+            json.dump(jsonToSave, file, indent=4, ensure_ascii=False, default=linkableValueDumpsToJSON)
+        
+        # Atomic rename
+        os.rename(temp_path, fullpath)
+        logging.debug(f"Successfully saved config to {fullpath}")
+        
+    except Exception as e:
+        logging.error(f"Error saving config to {fullpath}: {e}")
+        # Clean up temp file if it exists
+        if os.path.exists(temp_path):
+            os.remove(temp_path)
+        raise
 
 
 def saveThaumControlsConfig(
@@ -86,10 +104,16 @@ def readJSONConfig(fullpath: str):
         logging.warning(f"Config {fullpath} not exists")
         return None
     try:
-        with open(fullpath, "r") as file:
+        with open(fullpath, "r", encoding='utf-8') as file:
             config = json.load(file)
+    except FileNotFoundError:
+        logging.warning(f"Config file not found: {fullpath}")
+        return None
+    except json.JSONDecodeError as e:
+        logging.error(f"Invalid JSON in config {fullpath}: {e}")
+        return None
     except Exception as e:
-        logging.critical(f"Something went wrong while opening config {fullpath}: {e}")
+        logging.critical(f"Unexpected error while opening config {fullpath}: {e}")
         return None
     logging.debug(f"Config {fullpath} successfully loaded")
     return config
@@ -190,13 +214,27 @@ def renderDelay():
 
 
 def loadImage(path: str, backgroundImage: Image.Image = None, resize: tuple[int, int] | None = None) -> Image.Image:
-    image = Image.open(path)
-    if resize:
-        image = image.resize(resize, Image.Resampling.LANCZOS)
-    image = image.convert("RGBA")
-    backgroundImage = backgroundImage or Image.new("RGBA", image.size, "BLACK")  # Create a white rgba background
-    newImage = backgroundImage.convert("RGBA")
-    newImage.paste(image, mask=image)  # Paste the image on the background. Go to the links given below for details.
-    result = newImage.convert("RGB")
-    logging.debug(f"Loaded image {path}")
-    return result
+    """Safely load and process an image with proper resource management."""
+    if not os.path.exists(path):
+        raise FileNotFoundError(f"Image file not found: {path}")
+    
+    try:
+        with Image.open(path) as image:
+            # Create a copy to avoid issues with closed file
+            image_copy = image.copy()
+            
+            if resize:
+                image_copy = image_copy.resize(resize, Image.Resampling.LANCZOS)
+            
+            image_copy = image_copy.convert("RGBA")
+            backgroundImage = backgroundImage or Image.new("RGBA", image_copy.size, "BLACK")
+            newImage = backgroundImage.convert("RGBA")
+            newImage.paste(image_copy, mask=image_copy)
+            result = newImage.convert("RGB")
+            
+            logging.debug(f"Loaded image {path}")
+            return result
+            
+    except Exception as e:
+        logging.error(f"Error loading image {path}: {e}")
+        raise

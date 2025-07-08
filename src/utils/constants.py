@@ -79,5 +79,10 @@ MAX_LOG_FILES_COUNT = 20
 LOG_LEVEL = logging.DEBUG
 
 # ------------------------
+# Safety limits
+MAX_RECURSION_DEPTH = 20
+MAX_PATH_LENGTH = 50
+
+# ------------------------
 # DEBUG = True
 DEBUG = False

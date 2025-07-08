@@ -28,8 +28,11 @@ UI = OverlayUI(opacity=1)
 def main():
     try:
         Scenarios.beReadyForCreatingTI(UI)
+    except KeyboardInterrupt:
+        logging.info("Program interrupted by user")
     except Exception as e:
-        logging.critical(f"Error excepted in main thread: {e}")
+        logging.critical(f"Unexpected error in main thread: {e}", exc_info=True)
+        raise
 
 
 if __name__ == "__main__":
@@ -37,5 +40,8 @@ if __name__ == "__main__":
     logging.info("###############")
     try:
         UI.start(main)
+    except KeyboardInterrupt:
+        logging.info("Program interrupted by user")
     except Exception as e:
-        logging.critical(f"Error excepted in UI thread: {e}")
+        logging.critical(f"Unexpected error in UI thread: {e}", exc_info=True)
+        raise

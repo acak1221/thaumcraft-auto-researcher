@@ -1,0 +1,38 @@
+# Development dependencies for ThaumcraftAutoResearcher
+
+# Code formatting and linting
+black>=23.0.0
+flake8>=6.0.0
+isort>=5.0.0
+mypy>=1.0.0
+
+# Testing
+pytest>=7.0.0
+pytest-cov>=4.0.0
+pytest-mock>=3.0.0
+
+# Documentation
+sphinx>=5.0.0
+sphinx-rtd-theme>=1.0.0
+
+# Type checking
+types-Pillow
+types-requests
+
+# Code quality
+bandit>=1.7.0  # Security linting
+pylint>=2.15.0
+
+# Pre-commit hooks
+pre-commit>=2.20.0
+
+# Development tools
+ipdb>=0.13.0  # Better debugger
+rope>=1.0.0   # Refactoring tools
+
+# Performance profiling
+memory-profiler>=0.60.0
+line-profiler>=4.0.0
+
+# Dependency management
+pip-tools>=6.0.0

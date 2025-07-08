@@ -1,5 +1,6 @@
 import logging
 import math
+import os
 import time
 from typing import Callable
 
@@ -135,36 +136,62 @@ class ThaumInteractor:
         logging.info(f"All available aspects: {self.availableAspects}")
 
     def loadImage(self, path: str, backgroundImage: Image.Image = None, noResize: bool = False) -> Image.Image:
-        image = Image.open(path)
-        if not noResize:
-            image = self.imageResize(image)
-        image = image.convert("RGBA")
-        backgroundImage = backgroundImage or Image.new("RGBA", image.size, "BLACK")  # Create a white rgba background
-        newImage = backgroundImage.convert("RGBA")
-        newImage.paste(image, mask=image)  # Paste the image on the background. Go to the links given below for details.
-        result = newImage.convert("RGB")
-        logging.debug(f"Loaded image {path}")
-        return result
+        """Load image with proper resource management and error handling."""
+        if not os.path.exists(path):
+            logging.error(f"Image file not found: {path}")
+            raise FileNotFoundError(f"Image file not found: {path}")
+            
+        try:
+            with Image.open(path) as image:
+                # Create a copy to avoid issues with closed file
+                image_copy = image.copy()
+                
+                if not noResize:
+                    image_copy = self.imageResize(image_copy)
+                    
+                image_copy = image_copy.convert("RGBA")
+                backgroundImage = backgroundImage or Image.new("RGBA", image_copy.size, "BLACK")
+                newImage = backgroundImage.convert("RGBA")
+                newImage.paste(image_copy, mask=image_copy)
+                result = newImage.convert("RGB")
+                
+                logging.debug(f"Loaded image {path}")
+                return result
+                
+        except Exception as e:
+            logging.error(f"Error loading image {path}: {e}")
+            raise
 
     def loadAspectsImages(self):
         logging.info("Loading thaum aspects images...")
         for aspect in self.allAspects:
             if aspect.image:
                 continue
+                
+            # Load colored image
             imagePath = getAspectImagePath(aspect.name)
             try:
                 aspect.image = self.loadImage(imagePath, self.unknownAspectImage)
                 aspect.pixMapImage = QPixmap(imagePath)
             except Exception as e:
-                logging.critical(f"Couldn't load image from path {imagePath}. Error: {e}")
+                logging.error(f"Couldn't load colored image from {imagePath}: {e}")
                 aspect.image = self.unknownAspectImage
                 aspect.pixMapImage = QPixmap(UNKNOWN_ASPECT_IMAGE_PATH)
-            imagePath = getAspectImagePath(aspect.name, colored=False)
+            
+            # Load mask image
+            maskPath = getAspectImagePath(aspect.name, colored=False)
             try:
-                aspect.mask = Image.open(imagePath).convert("L")
+                with Image.open(maskPath) as mask_img:
+                    aspect.mask = mask_img.convert("L").copy()
             except Exception as e:
-                logging.critical(f"Couldn't load image from path {imagePath} Error: {e}")
-                aspect.mask = Image.open(UNKNOWN_ASPECT_IMAGE_PATH).convert("L")
+                logging.error(f"Couldn't load mask image from {maskPath}: {e}")
+                try:
+                    with Image.open(UNKNOWN_ASPECT_IMAGE_PATH) as unknown_img:
+                        aspect.mask = unknown_img.convert("L").copy()
+                except Exception as e2:
+                    logging.critical(f"Couldn't load unknown aspect image: {e2}")
+                    # Create a default mask as last resort
+                    aspect.mask = Image.new("L", (32, 32), 255)
 
     def scrollLeft(self):
         if self.currentAspectsPageIdx <= 0:
@@ -372,7 +399,8 @@ class ThaumInteractor:
         logging.info(f"Take aspect {aspect}...")
         (cellX, cellY) = self.scrollToAspect(aspect)
         self.takeAspectByCellCoords(cellX, cellY)
-        aspect.count -= 1
+        if aspect.count is not None and aspect.count > 0:
+            aspect.count -= 1
 
     def getAspectRecipeByName(self, aspectName: str):
         recipe = self.recipes.get(aspectName)
@@ -380,7 +408,7 @@ class ThaumInteractor:
             raise ValueError(f"Aspect {aspectName} not exists in known aspects recipes")
         return recipe
 
-    def mixAspect(self, aspect: Aspect, useShift=True, targetCount=3) -> None:
+    def mixAspect(self, aspect: Aspect, useShift=True, targetCount=3, _recursion_depth=0) -> None:
         """
         Creates aspect by mixing aspects from its recipe
 
@@ -388,21 +416,42 @@ class ThaumInteractor:
             aspect: Aspect that we need to create
             useShift: If True, then mixing is performed by Shift+LMB
             targetCount: How many aspects do we need to craft
+            _recursion_depth: Internal parameter to prevent infinite recursion
         """
-        if aspect.count >= targetCount:
+        MAX_RECURSION_DEPTH = 20  # Prevent infinite recursion
+        
+        if _recursion_depth > MAX_RECURSION_DEPTH:
+            logging.error(f"Maximum recursion depth reached for aspect {aspect.name}")
             return
-        mixingTimes = targetCount - aspect.count
-        logging.info(f"Mixing aspect {aspect} to {targetCount} for {mixingTimes} times...")
-        recipe = self.getAspectRecipeByName(aspect.name)
+            
+        if aspect.count is not None and aspect.count >= targetCount:
+            return
+            
+        current_count = aspect.count if aspect.count is not None else 0
+        mixingTimes = targetCount - current_count
+        logging.info(f"Mixing aspect {aspect} to {targetCount} for {mixingTimes} times... (depth: {_recursion_depth})")
+        
+        try:
+            recipe = self.getAspectRecipeByName(aspect.name)
+        except ValueError as e:
+            logging.error(f"Cannot get recipe for aspect {aspect.name}: {e}")
+            return
+            
         if len(recipe) < 2:  # Aspect is basic (Aqua, Terra, Aer, Ordo, Perditio)
-            if aspect.count < mixingTimes:
+            if current_count < mixingTimes:
                 logging.critical(f"Ran out of basic aspect {aspect.name}")
             return
-        aspect1 = self.getAspectByName(recipe[0])
-        aspect2 = self.getAspectByName(recipe[1])
+            
+        try:
+            aspect1 = self.getAspectByName(recipe[0])
+            aspect2 = self.getAspectByName(recipe[1])
+        except ValueError as e:
+            logging.error(f"Cannot find required aspects for recipe {recipe}: {e}")
+            return
+            
         # Creating aspects used in recipe so that they don't run out
-        self.mixAspect(aspect1, useShift, mixingTimes)
-        self.mixAspect(aspect2, useShift, mixingTimes)
+        self.mixAspect(aspect1, useShift, mixingTimes, _recursion_depth + 1)
+        self.mixAspect(aspect2, useShift, mixingTimes, _recursion_depth + 1)
 
         if useShift:
             (cellX, cellY) = self.scrollToAspect(aspect)
@@ -431,9 +480,9 @@ class ThaumInteractor:
                 eventsDelay()
 
         # Updating counts of aspects
-        aspect.count += mixingTimes
-        aspect1.count -= mixingTimes
-        aspect2.count -= mixingTimes
+        aspect.count = (aspect.count or 0) + mixingTimes
+        aspect1.count = max(0, (aspect1.count or 0) - mixingTimes)
+        aspect2.count = max(0, (aspect2.count or 0) - mixingTimes)
 
     def fillByLinkMap(self, aspectsMap: dict[tuple[int, int], str]):
         logging.info(f"Filling aspects by link map: {aspectsMap}")
