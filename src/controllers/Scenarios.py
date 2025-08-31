@@ -9,7 +9,7 @@ from typing import Callable
 from PyQt5.QtCore import QEvent
 from PyQt5.QtGui import QColor
 
-from UI.primitives.Text import Align
+from src.UI.primitives.Text import Align
 from src.UI.OverlayUI import OverlayUI, KeyboardKeys
 from src.UI.primitives import Circle, Image, Line, Point, Rect, Text, UIPrimitive
 from src.UI.primitives.values import DEFAULT_FONT
@@ -33,6 +33,7 @@ from src.utils.utils import (
     saveThaumVersionConfig,
     loadThaumVersionConfig,
 )
+from src.utils.user_settings import get_setting, set_setting
 
 pointTextAnchor = LinkableCoord(MARGIN, MARGIN)
 
@@ -513,16 +514,19 @@ def beReadyForCreatingTI(UI: OverlayUI):
         UI.repaint()
         renderDelay()
         directlyCreateTI(UI)
+        # directlyCreateTI() renders the next dialogue (cache/rescan) itself, so we just return here
+        return
 
-        createNextBackButtonsAndText(
-            UI,
-            """Сейчас нейросеть определит имеющиеся аспекты в твоем столе.
+    # Initial screen with Next/Back to actually start creation
+    createNextBackButtonsAndText(
+        UI,
+        """Сейчас нейросеть определит имеющиеся аспекты в твоем столе.
 Не двигай курсором мыши в процессе""",
-            startCreatingTI,
-            [],
-            chooseThaumVersion,
-            [UI],
-        )
+        startCreatingTI,
+        [],
+        chooseThaumVersion,
+        [UI],
+    )
 
 
 def directlyCreateTI(UI):
@@ -534,7 +538,34 @@ def directlyCreateTI(UI):
     logging.info("TI successfully created")
     UI.repaint()
     renderDelay()
-    TI.updateAvailableAspectsInInventory(detectionAspectsDialogue, [UI, TI])
+    UI.clearAll()
+    UI.createExitButton()
+
+    def load_from_cache():
+        UI.setAllObjectsVisibility(False)
+        UI.repaint()
+        eventsDelay()
+        TI.updateAvailableAspectsInInventory(detectionAspectsDialogue, [UI, TI], useCache=True)
+
+    def rescan_inventory():
+        UI.setAllObjectsVisibility(False)
+        UI.repaint()
+        eventsDelay()
+        TI.updateAvailableAspectsInInventory(detectionAspectsDialogue, [UI, TI], useCache=False)
+
+    createButtonsAndText(
+        UI,
+        """Выберите источник доступных аспектов:
+1) Загрузить из кэша (быстро)
+2) Пересканировать инвентарь (точнее)""",
+        [
+            ("Загрузить из кэша ", load_from_cache, []),
+            ("Пересканировать ", rescan_inventory, []),
+        ],
+        MARGIN,
+        MARGIN,
+        True,
+    )
 
 
 def detectionAspectsDialogue(UI, TI):
@@ -651,10 +682,10 @@ def detectionAspectsDialogue(UI, TI):
     # buttonsLRHeight = buttonsLRWidth * 0.3
     def onClickScrollButton(isLeft=False):
         logging.info(f"Inventory aspects page scrolling to {'LEFT' if isLeft else 'RIGHT'}")
-        UI.setAllObjectsVisibility(False)
-        exitButton.setVisibility(True)
-        UI.repaint()
-        eventsDelay()
+        # Only hide list objects to avoid flicker; keep exit and main text visible
+        UI.setObjectsVisibility(cellsObjects, False)
+        reloadCacheBtn.setVisibility(False)
+        rescanBtn.setVisibility(False)
         if isLeft:
             TI.scrollLeft()
         else:
@@ -694,7 +725,65 @@ def detectionAspectsDialogue(UI, TI):
     UI.addObject(buttonScrollL)
     UI.addObject(buttonScrollR)
 
-    mainDialogueObjects = [mainText, nextButton, backButton, buttonScrollL, buttonScrollR]
+    # Extra control buttons: reload from cache and rescan
+    def reload_from_cache():
+        UI.setAllObjectsVisibility(False)
+        exitButton.setVisibility(True)
+        UI.repaint()
+        eventsDelay()
+        TI.updateAvailableAspectsInInventory(detectionAspectsDialogue, [UI, TI], useCache=True)
+
+    def rescan():
+        UI.setAllObjectsVisibility(False)
+        exitButton.setVisibility(True)
+        UI.repaint()
+        eventsDelay()
+        TI.updateAvailableAspectsInInventory(detectionAspectsDialogue, [UI, TI], useCache=False)
+
+    reloadCacheBtn = Text(
+        MARGIN,
+        MARGIN,
+        "Загрузить из кэша",
+        color=QColor("white"),
+        withBackground=True,
+        padding=MARGIN,
+        UI=UI,
+        hoverable=True,
+        clickable=True,
+        onClickCallback=reload_from_cache,
+    )
+    rescanBtn = Text(
+        MARGIN,
+        MARGIN * 3,
+        "Пересканировать",
+        color=QColor("white"),
+        withBackground=True,
+        padding=MARGIN,
+        UI=UI,
+        hoverable=True,
+        clickable=True,
+        onClickCallback=rescan,
+    )
+    UI.addObject(reloadCacheBtn)
+    UI.addObject(rescanBtn)
+
+    # Keep extra buttons positioned when main text moves
+    old_main_move_cb = mainText.onMoveCallback
+
+    def _update_extra_buttons_pos():
+        if callable(old_main_move_cb):
+            old_main_move_cb()
+        base_y = backButton.y + backButton.h + MARGIN
+        reloadCacheBtn.x = MARGIN
+        reloadCacheBtn.y = base_y
+        rescanBtn.x = MARGIN
+        rescanBtn.y = base_y + reloadCacheBtn.h + MARGIN
+
+    mainText.onMoveCallback = _update_extra_buttons_pos
+    if hasattr(mainText, 'LT') and hasattr(mainText.LT, 'onMoveCallback'):
+        mainText.LT.onMoveCallback = _update_extra_buttons_pos
+
+    mainDialogueObjects = [mainText, nextButton, backButton, buttonScrollL, buttonScrollR, reloadCacheBtn, rescanBtn]
 
     # --- Cell dialogue elements
     currentAspectCellCoords: list[int | None] = [None, None]
@@ -1163,7 +1252,10 @@ def runResearching(UI: OverlayUI, TI: ThaumInteractor):
         noneHexagons[0].clear()
         currentLinkMap[0].clear()
         updateDetectingField()
-        updateSolving()
+        # Use interrupt flag to ensure the solver respects global timeout while iterating
+        interruptingFlag = [False]
+        UI.setTimeout(LINK_GENERATION_MAX_TIME_MS, lambda: interruptingFlag.__setitem__(0, True))
+        updateSolving(interruptingFlag)
         logging.info("Everything prepared to next detecting")
         if multyResearchesCountLeft[0] > 0:
             multyResearchesCountLeft[0] -= 1
@@ -1306,9 +1398,8 @@ def runResearching(UI: OverlayUI, TI: ThaumInteractor):
             if isInUpdatingAspects[0]:
                 return
             isInUpdatingAspects[0] = True
-            UI.setAllObjectsVisibility(False)
-            UI.repaint()
-            renderDelay()
+            # Do not hide field/cells to prevent UI flicker; just show a small overlay note
+            progressNote = UI.addObject(Text(MARGIN, MARGIN, "Обновляю решение...", color=QColor("white"), withBackground=True, padding=MARGIN))
 
             curUpdatingUid[0] += 1
             interruptingFlag = [False]
@@ -1321,6 +1412,7 @@ def runResearching(UI: OverlayUI, TI: ThaumInteractor):
 
             updateDetectingField()
             updateSolving(interruptingFlag)
+            UI.removeObject(progressNote)
             switchToActiveState()
             isInUpdatingAspects[0] = False
 

@@ -195,8 +195,11 @@ def generateLinkMap(
     logging.info(f"HOLES HEXAGONS: {holes_set}")
     aspect_recipes = loadRecipesForSelectedVersion()
     available_aspect_recipes: dict[str, list[str, str]] = {}
+    # Build graph from aspects available in inventory PLUS all aspects already on the field
+    # so that endpoints like aequalitas (not in inventory) are reachable.
+    existing_aspect_names = set(existing_aspects.values())
     for recipe_aspect in aspect_recipes:
-        if recipe_aspect in available_aspects:
+        if (recipe_aspect in available_aspects) or (recipe_aspect in existing_aspect_names):
             available_aspect_recipes[recipe_aspect] = aspect_recipes[recipe_aspect]
     aspect_graph = AspectGraph(available_aspect_recipes)
 

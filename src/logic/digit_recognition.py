@@ -1,4 +1,5 @@
 from src.logic.onnx_inference import ObjectPrediction
+from typing import List
 
 
 def is_digit(prediction: ObjectPrediction) -> bool:
@@ -18,6 +19,25 @@ def prediction_inside_prediction(pred_inner: ObjectPrediction, pred_outer: Objec
     return x_min <= pred_inner.x <= x_max and y_min <= pred_inner.y <= y_max
 
 
+def _iou(a: ObjectPrediction, b: ObjectPrediction) -> float:
+    ax1 = a.x - a.width / 2
+    ay1 = a.y - a.height / 2
+    ax2 = a.x + a.width / 2
+    ay2 = a.y + a.height / 2
+    bx1 = b.x - b.width / 2
+    by1 = b.y - b.height / 2
+    bx2 = b.x + b.width / 2
+    by2 = b.y + b.height / 2
+    inter_w = max(0.0, min(ax2, bx2) - max(ax1, bx1))
+    inter_h = max(0.0, min(ay2, by2) - max(ay1, by1))
+    inter = inter_w * inter_h
+    if inter == 0:
+        return 0.0
+    area_a = (ax2 - ax1) * (ay2 - ay1)
+    area_b = (bx2 - bx1) * (by2 - by1)
+    return inter / max(1e-6, (area_a + area_b - inter))
+
+
 def remove_same_spot_predictions(digit_predictions: list[ObjectPrediction]) -> list[ObjectPrediction]:
     """
     Для случаев, когда на одну цифру приходится несколько предсказаний, расположенных примерно в одном месте.
@@ -26,18 +46,19 @@ def remove_same_spot_predictions(digit_predictions: list[ObjectPrediction]) -> l
     MIN_VALID_DIFF = (
         2.0  # Минимальная разница в координатах между предсказаниями, когда предсказания считаются для разных цифр
     )
-    prev_x = -666
-    result = []
-    digit_predictions.sort(key=lambda pred: pred.x)
-    for digit_pred in digit_predictions:
-        if abs(prev_x - digit_pred.x) < MIN_VALID_DIFF:
-            # Коллизия, выбираем более уверенное предсказание
-            if digit_pred.confidence > result[-1].confidence:
-                result[-1] = digit_pred
-        else:
-            result.append(digit_pred)
-            prev_x = digit_pred.x
-    return result
+    # NMS-like suppression by x-closeness and IoU
+    preds = sorted(digit_predictions, key=lambda p: p.confidence, reverse=True)
+    kept: List[ObjectPrediction] = []
+    for p in preds:
+        suppress = False
+        for k in kept:
+            if abs(p.x - k.x) < MIN_VALID_DIFF and _iou(p, k) > 0.1:
+                suppress = True
+                break
+        if not suppress:
+            kept.append(p)
+    kept.sort(key=lambda pred: pred.x)
+    return kept
 
 
 def group_aspects_and_digits(

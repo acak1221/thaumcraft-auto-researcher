@@ -29,6 +29,8 @@ from src.utils.constants import (
     NEUROLINK_SCRIPT_IMAGE_PREDICTION_NAME,
     DELAY_BETWEEN_RENDER,
     DELAY_BETWEEN_EVENTS,
+    THAUM_FIELD_ASPECTS_SAVE_PATH,
+    THAUM_AVAILABLE_ASPECTS_SAVE_PATH,
 )
 from src.utils.constants import getAspectImagePath
 from src.utils.utils import (
@@ -37,6 +39,7 @@ from src.utils.utils import (
     eventsDelay,
     renderDelay,
     loadRecipesForSelectedVersion,
+    saveJSONConfig,
 )
 
 
@@ -51,6 +54,10 @@ def createTI(UI):
         return None
 
     recipesConfig = loadRecipesForSelectedVersion()
+    if recipesConfig is None:
+        logging.critical("Recipes config is not loaded. Select valid Thaumcraft version or fix configs.")
+        Scenarios.chooseThaumVersion(UI)
+        return None
 
     aspectsOrderConfig = readJSONConfig(THAUM_ASPECTS_ORDER_CONFIG_PATH)
     aspectsOrderConfig = aspectsOrderConfig["aspects"]
@@ -488,8 +495,30 @@ class ThaumInteractor:
             time.sleep(1)
         return screenshotImage
 
-    def updateAvailableAspectsInInventory(self, onFinishCallback: Callable, callbackArgs=[]):
+    def updateAvailableAspectsInInventory(self, onFinishCallback: Callable, callbackArgs=[], useCache=True):
         logging.info("Detecting available aspects in inventory...")
+        # Try to load cached available aspects first
+        if useCache:
+            cached = readJSONConfig(THAUM_AVAILABLE_ASPECTS_SAVE_PATH)
+            if cached and isinstance(cached.get("available"), list):
+                loaded = []
+                for item in cached["available"]:
+                    try:
+                        aspect = self.getAspectByName(item.get("name"))
+                    except ValueError:
+                        continue
+                    aspect.count = int(item.get("count") or 0)
+                    aspect.cellX = item.get("cellX")
+                    aspect.cellY = item.get("cellY")
+                    loaded.append(aspect)
+                if loaded:
+                    self.availableAspects = loaded
+                    self.availableAspects.sort(key=lambda a: a.uid)
+                    logging.info(f"Loaded {len(self.availableAspects)} available aspects from cache {THAUM_AVAILABLE_ASPECTS_SAVE_PATH}")
+                    self.logAvailableAspects()
+                    onFinishCallback(*callbackArgs)
+                    return
+
         self.availableAspects = []
 
         debugHighlightingRect = self.addDebugHighlightingRect()
@@ -506,6 +535,17 @@ class ThaumInteractor:
                 self.availableAspects.sort(key=lambda a: a.uid)
                 logging.info("All detected available aspects was sorted")
                 self.logAvailableAspects()
+
+                # Persist available aspects
+                try:
+                    to_save = [
+                        {"name": a.name, "uid": a.uid, "count": a.count, "cellX": a.cellX, "cellY": a.cellY}
+                        for a in self.availableAspects
+                    ]
+                    saveJSONConfig(THAUM_AVAILABLE_ASPECTS_SAVE_PATH, {"available": to_save})
+                    logging.info(f"Available aspects saved to {THAUM_AVAILABLE_ASPECTS_SAVE_PATH}")
+                except Exception as e:
+                    logging.error(f"Failed to save available aspects to {THAUM_AVAILABLE_ASPECTS_SAVE_PATH}: {e}")
 
                 onFinishCallback(*callbackArgs)
 
@@ -533,7 +573,7 @@ class ThaumInteractor:
                 for prediction in predictions:
                     try:
                         aspect = self.getAspectByName(prediction.predictionName)
-                        aspect_count = count_predictions[prediction.predictionName]
+                        aspect_count = count_predictions.get(prediction.predictionName)
                         if aspect.count is None:  # count initialization
                             aspect.count = aspect_count or 0
                         else:
@@ -722,4 +762,17 @@ class ThaumInteractor:
         logging.debug("End of detecting hexagons field")
 
         self.UI.removeObject(debugHighlightingRect)
+
+        # Persist detected field aspects
+        try:
+            to_save = {
+                "existing": {f"{x},{y}": name for (x, y), name in existingAspects.items()},
+                "none": [f"{x},{y}" for (x, y) in noneHexagons],
+                "free": [f"{x},{y}" for (x, y) in freeHexagons],
+            }
+            saveJSONConfig(THAUM_FIELD_ASPECTS_SAVE_PATH, to_save)
+            logging.info(f"Field aspects saved to {THAUM_FIELD_ASPECTS_SAVE_PATH}")
+        except Exception as e:
+            logging.error(f"Failed to save field aspects to {THAUM_FIELD_ASPECTS_SAVE_PATH}: {e}")
+
         return existingAspects, noneHexagons, freeHexagons

@@ -1,8 +1,10 @@
 from dataclasses import dataclass
+import logging
 
 import numpy as np
 import onnxruntime
 from PIL import Image
+from src.utils import constants
 
 
 @dataclass
@@ -21,14 +23,42 @@ class OnnxObjectDetection:
         model_path: str,
         class_names: list[str],
         img_size: int,  # Высота/ширина квадратного изображения
+        providers: list[str] | None = None,
+        intra_op_num_threads: int = 0,
+        inter_op_num_threads: int = 0,
+        graph_optimization_level: str = "ORT_ENABLE_ALL",
+        confidence: float = None,
+        iou_threshold: float = None,
+        max_detections: int = None,
     ):
-        self.model = onnxruntime.InferenceSession(model_path)
+        so = onnxruntime.SessionOptions()
+        if intra_op_num_threads:
+            so.intra_op_num_threads = intra_op_num_threads
+        if inter_op_num_threads:
+            so.inter_op_num_threads = inter_op_num_threads
+        try:
+            so.graph_optimization_level = getattr(onnxruntime.GraphOptimizationLevel, graph_optimization_level)
+        except Exception:
+            logging.warning(f"Unknown ORT graph optimization level: {graph_optimization_level}. Using ORT_ENABLE_ALL")
+            so.graph_optimization_level = onnxruntime.GraphOptimizationLevel.ORT_ENABLE_ALL
+
+        self.model = onnxruntime.InferenceSession(model_path, sess_options=so, providers=(providers or constants.ORT_PROVIDERS))
         self.class_names = class_names
         inputs = self.model.get_inputs()
         outputs = self.model.get_outputs()
         self.input_layer_name = inputs[0].name
         self.output_layer_name = outputs[0].name
         self.img_size = img_size
+        self.confidence = confidence if confidence is not None else constants.DETECTION_CONFIDENCE
+        self.iou_threshold = iou_threshold if iou_threshold is not None else constants.DETECTION_IOU
+        self.max_detections = max_detections if max_detections is not None else constants.DETECTION_MAX_DETECTIONS
+
+        # warm up session by running a dummy inference once
+        try:
+            dummy = np.zeros((1, 3, self.img_size, self.img_size), dtype=np.float32)
+            _ = self._predict_raw(dummy)
+        except Exception as e:
+            logging.debug(f"ORT warmup failed (non-fatal): {e}")
 
     def _predict_raw(self, img_in: np.ndarray) -> np.ndarray:
         """Performs object detection on the given image using the ONNX session.
@@ -58,7 +88,14 @@ class OnnxObjectDetection:
         origin_shape = image.size[::-1]
         scale = max(origin_shape) / self.img_size
         predicted_arrays = self._predict_raw(preproc_image)
-        postprocessed = postprocess(predicted_arrays, scale, origin_shape)[0]
+        postprocessed = postprocess(
+            predicted_arrays,
+            scale,
+            origin_shape,
+            confidence=self.confidence,
+            iou_threshold=self.iou_threshold,
+            max_detections=self.max_detections,
+        )[0]
         result = list(
             map(
                 lambda prediction: ObjectPrediction(

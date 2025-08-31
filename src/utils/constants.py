@@ -35,7 +35,12 @@ THAUM_ASPECTS_ORDER_CONFIG_PATH = to_resource_path("aspects_configs/aspectsOrder
 
 
 def getAspectImagePath(aspectName, colored=True):
-    return to_resource_path(f'images/{"color" if colored else "mono"}/{aspectName}.png')
+    # Some aspects have alternative names across mods; map them to existing image names
+    aliases = {
+        "balanced": "aequalitas",
+    }
+    image_name = aliases.get(aspectName, aspectName)
+    return to_resource_path(f'images/{"color" if colored else "mono"}/{image_name}.png')
 
 
 UNKNOWN_ASPECT_IMAGE_PATH = to_resource_path("images/unknownAspect.png")
@@ -65,6 +70,22 @@ NEUROLINK_FREE_HEXAGON_PREDICTION_NAME = "free_hex"
 NEUROLINK_SCRIPT_IMAGE_PREDICTION_NAME = "script"
 NEUROLINK_UNKNOWN_ASPECT_PREDICTION_NAME = "unknown"
 
+# ONNX Runtime configuration
+# Note: CUDA provider will be used only if available and listed here.
+# To use GPU, add "CUDAExecutionProvider" to the list or use --use-gpu flag
+ORT_PROVIDERS = [
+    "CPUExecutionProvider",
+]
+ORT_INTRA_OP_THREADS = 0  # 0 means default (let ORT decide)
+ORT_INTER_OP_THREADS = 0
+ORT_GRAPH_OPT_LEVEL = "ORT_ENABLE_ALL"  # ORT_DISABLE_ALL | ORT_ENABLE_BASIC | ORT_ENABLE_EXTENDED | ORT_ENABLE_ALL
+
+# Detection defaults
+DETECTION_IMG_SIZE = 640
+DETECTION_CONFIDENCE = 0.4
+DETECTION_IOU = 0.5
+DETECTION_MAX_DETECTIONS = 300
+
 
 # ------------------------
 # Other constants
@@ -72,6 +93,8 @@ IMAGES_TOLERANCE_PERCENT = 0.02
 IMAGE_TMP_PATH = to_appdata_path(".tmp/tmp.png")
 LOG_FILE_PATH = to_appdata_path("logs/logs.log")
 LINK_GENERATION_MAX_TIME_MS = 10 * 1000
+THAUM_FIELD_ASPECTS_SAVE_PATH = to_appdata_path("user_data/field_aspects.json")
+THAUM_AVAILABLE_ASPECTS_SAVE_PATH = to_appdata_path("user_data/available_aspects.json")
 
 # Loggers
 MAX_LOG_FILE_SIZE_BYTES = 1024 * 1024 * 5  # 5 Mb

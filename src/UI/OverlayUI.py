@@ -150,8 +150,13 @@ class _Window(QMainWindow):
             pressedKeyCode = event.scan_code
             self.holdingKeys.discard(pressedKeyCode)
 
-        self._keyboard_press_handle = keyboard.on_press(onKeyboardPress)
-        self._keyboard_release_handle = keyboard.on_release(onKeyboardRelease)
+        try:
+            self._keyboard_press_handle = keyboard.on_press(onKeyboardPress)
+            self._keyboard_release_handle = keyboard.on_release(onKeyboardRelease)
+        except Exception as e:
+            logging.error(f"Keyboard hook initialization failed. Keyboard shortcuts may be limited: {e}")
+            self._keyboard_press_handle = None
+            self._keyboard_release_handle = None
 
         self.startTimer(FRAME_TIME)
 
@@ -336,8 +341,16 @@ class _Window(QMainWindow):
                 keyboard.unhook(self._keyboard_release_handle)
         except Exception as e:
             logging.error(f"Error unhooking keyboard: {e}")
-        self.otherProcessThread.exit()
-        self.app.quit()
+        try:
+            if self.otherProcessThread is not None:
+                self.otherProcessThread.exit()
+        except Exception as e:
+            logging.error(f"Error stopping background thread: {e}")
+        try:
+            if self.app is not None:
+                self.app.quit()
+        except Exception as e:
+            logging.error(f"Error quitting app: {e}")
         # self.destroy()
 
 
