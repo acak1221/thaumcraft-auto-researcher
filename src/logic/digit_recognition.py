@@ -12,10 +12,10 @@ def is_aspect(prediction: ObjectPrediction) -> bool:
 
 def prediction_inside_prediction(pred_inner: ObjectPrediction, pred_outer: ObjectPrediction) -> bool:
     """True, если pred_inner находится внутри pred_outer"""
-    x_min = pred_outer.x - pred_outer.width // 2
-    x_max = pred_outer.x + pred_outer.width // 2
-    y_min = pred_outer.y - pred_outer.height // 2
-    y_max = pred_outer.y + pred_outer.height // 2
+    x_min = pred_outer.x - pred_outer.width / 2
+    x_max = pred_outer.x + pred_outer.width / 2
+    y_min = pred_outer.y - pred_outer.height / 2
+    y_max = pred_outer.y + pred_outer.height / 2
     return x_min <= pred_inner.x <= x_max and y_min <= pred_inner.y <= y_max
 
 

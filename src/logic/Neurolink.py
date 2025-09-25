@@ -12,17 +12,9 @@ class _NeurolinkClass:
     field_aspects_model: OnnxObjectDetection
     inventory_aspects_model: OnnxObjectDetection
 
-    # Make it singleton
-    _instances = {}
-
-    def __call__(cls, *args, **kwargs):
-        if cls not in cls._instances:
-            cls._instances[cls] = super(_NeurolinkClass, cls).__call__(*args, **kwargs)
-        return cls._instances[cls]
-
     def __init__(self):
         # Detect available ORT providers and intersect with desired ones
-        available_providers = set(ort.get_available_providers())
+        available_providers = ort.get_available_providers()
         desired_providers = [p for p in constants.ORT_PROVIDERS if p in available_providers]
         selected_providers = desired_providers or list(available_providers)
         

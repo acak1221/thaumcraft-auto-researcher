@@ -531,6 +531,13 @@ class ThaumInteractor:
             def exitWithSort():
                 self.UI.removeObject(debugHighlightingRect)
 
+                # Leave only unique aspects by UID to avoid duplicated references
+                unique_aspects: dict[int, Aspect] = {}
+                for aspect in self.availableAspects:
+                    if aspect.uid not in unique_aspects:
+                        unique_aspects[aspect.uid] = aspect
+                self.availableAspects = list(unique_aspects.values())
+
                 # Sort found aspects
                 self.availableAspects.sort(key=lambda a: a.uid)
                 logging.info("All detected available aspects was sorted")
@@ -574,8 +581,13 @@ class ThaumInteractor:
                     try:
                         aspect = self.getAspectByName(prediction.predictionName)
                         aspect_count = count_predictions.get(prediction.predictionName)
-                        if aspect.count is None:  # count initialization
-                            aspect.count = aspect_count or 0
+                        if aspect_count is None:
+                            logging.debug(
+                                "Skip updating count for %s: prediction returned None",
+                                prediction.predictionName,
+                            )
+                        elif aspect.count is None:  # count initialization
+                            aspect.count = aspect_count
                         else:
                             # If predictions differ we take minimal
                             # because it's better to underestimate than to overestimate aspects count
